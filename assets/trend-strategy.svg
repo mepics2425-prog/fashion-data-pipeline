@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="740" viewBox="0 0 1600 740">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b1020"/><stop offset="100%" stop-color="#171b35"/></linearGradient>
+<linearGradient id="ac" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+<marker id="arr" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#64748b"/></marker>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif}
+.tt{fill:#f8fafc;font-size:52px;font-weight:800} .st{fill:#a5b4fc;font-size:25px;font-weight:600}
+.h{fill:#f8fafc;font-size:27px;font-weight:750} .t{fill:#cbd5e1;font-size:20px;font-weight:500}
+.s{fill:#94a3b8;font-size:17px;font-weight:500} .ln{stroke:#64748b;stroke-width:4;fill:none;marker-end:url(#arr)}
+</style></defs><rect width="100%" height="100%" fill="url(#bg)"/>
+<text x="70" y="85" class="tt">Trend Strategy</text>
+<text x="70" y="130" class="st">절대 인기보다 최근 얼마나 빠르게 상승하는가를 추적</text>
+<rect x="90" y="230" width="280" height="150" rx="24" fill="#111827" stroke="#475569" stroke-width="2.5"/>
+<text x="230.0" y="278" text-anchor="middle" class="h">T-7d</text>
+<text x="230.0" y="314" text-anchor="middle" class="s">review 1,020</text>
+<text x="230.0" y="341" text-anchor="middle" class="s">rank 74</text>
+<rect x="440" y="230" width="280" height="150" rx="24" fill="#111827" stroke="#475569" stroke-width="2.5"/>
+<text x="580.0" y="278" text-anchor="middle" class="h">T-3d</text>
+<text x="580.0" y="314" text-anchor="middle" class="s">review 1,110</text>
+<text x="580.0" y="341" text-anchor="middle" class="s">rank 52</text>
+<rect x="790" y="230" width="280" height="150" rx="24" fill="#111827" stroke="#475569" stroke-width="2.5"/>
+<text x="930.0" y="278" text-anchor="middle" class="h">T-1d</text>
+<text x="930.0" y="314" text-anchor="middle" class="s">review 1,190</text>
+<text x="930.0" y="341" text-anchor="middle" class="s">rank 37</text>
+<rect x="1140" y="230" width="280" height="150" rx="24" fill="#24164b" stroke="#8b5cf6" stroke-width="2.5"/>
+<text x="1280.0" y="278" text-anchor="middle" class="h">NOW</text>
+<text x="1280.0" y="314" text-anchor="middle" class="s">review 1,310</text>
+<text x="1280.0" y="341" text-anchor="middle" class="s">rank 21</text>
+<rect x="250" y="540" width="1100" height="120" rx="24" fill="#0d2345" stroke="#3b82f6" stroke-width="2.5"/>
+<text x="800.0" y="588" text-anchor="middle" class="h">Trend Score Candidates</text>
+<text x="800.0" y="624" text-anchor="middle" class="s">review velocity · like growth · rank movement · recency · sales signals</text>
+<path d="M370 305 L440 305" class="ln"/>
+<path d="M720 305 L790 305" class="ln"/>
+<path d="M1070 305 L1140 305" class="ln"/>
+</svg>
