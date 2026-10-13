@@ -1,0 +1,7 @@
+beautifulsoup4
+oci
+Pillow
+playwright
+PyMySQL
+pytesseract
+requests

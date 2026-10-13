@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사이즈표 OCR 콘솔</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#fff; --text:#14151a; --muted:#717684;
+    --line:#e7e9ef; --soft:#eef1f7; --accent:#645cff;
+    --ok:#1f8a5b; --ok-bg:#e6f5ee;
+    --warn:#a8710f; --warn-bg:#fbf1dd;
+    --none:#5a6072; --none-bg:#eef0f5;
+    --bad:#b4373f; --bad-bg:#fbe9ea;
+    --shadow:0 8px 25px rgba(31,35,48,.07); --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:Inter,Pretendard,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+    font-size:14px;line-height:1.6;word-break:keep-all}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+  h1{font-size:19px;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px}
+  .card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+  select,input[type=text],input[type=number]{font:inherit;font-size:13px;padding:7px 9px;
+    border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text)}
+  input[type=text]{min-width:220px}
+  button{font:inherit;font-size:13px;padding:7px 13px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--text)}
+  button:hover{background:var(--soft)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{filter:brightness(1.08)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  code,.m{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11.5px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--soft)}
+  .pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:7px;white-space:nowrap}
+  .SUCCESS{background:var(--ok-bg);color:var(--ok)}
+  .REVIEW{background:var(--warn-bg);color:var(--warn)}
+  .NO_SIZE_TABLE{background:var(--none-bg);color:var(--none)}
+  .err{background:var(--bad-bg);color:var(--bad)}
+  .queued{background:var(--soft);color:var(--muted)}
+  .running{background:#e8e6ff;color:var(--accent)}
+  .bar{height:9px;background:var(--soft);border-radius:6px;overflow:hidden;margin:9px 0 6px}
+  .bar > i{display:block;height:100%;background:var(--accent);transition:width .4s}
+  .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .stats b{color:var(--text);font-variant-numeric:tabular-nums}
+  .muted{color:var(--muted)}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;
+    color:var(--muted);font-size:13px;background:#fbfcfe}
+  .drop.over{border-color:var(--accent);background:#f3f2ff;color:var(--accent)}
+  .split{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:900px){.split{grid-template-columns:1.15fr .85fr}}
+  .scroll{max-height:460px;overflow:auto}
+  pre{background:var(--soft);border-radius:9px;padding:10px;overflow:auto;font-size:11.5px;margin:6px 0}
+  .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:7px;border:1px solid var(--line)}
+  .note{font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+  .tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>사이즈표 OCR 콘솔</h1>
+  <p class="sub">상세 이미지에서 실측 사이즈표를 뽑습니다 ·
+    결과는 여기 보관만 하고 <b>product_sizes 에 넣지 않습니다</b></p>
+
+  <!-- 새 작업 -->
+  <div class="card">
+    <h2>새 작업</h2>
+    <div class="row">
+      <div>
+        <label>대상</label>
+        <select id="src">
+          <option value="no_sizes">사이즈가 없는 상품</option>
+          <option value="not_done">아직 OCR 하지 않은 상품</option>
+          <option value="all">이미지가 있는 상품 전체</option>
+          <option value="ids">상품 id 직접 지정</option>
+        </select>
+      </div>
+      <div id="limitBox">
+        <label>최대 건수 (0 = 전부)</label>
+        <input type="number" id="limit" value="0" min="0" step="100" style="width:130px">
+      </div>
+      <div id="idsBox" style="display:none">
+        <label>상품 id — 쉼표·줄바꿈 아무거나</label>
+        <input type="text" id="ids" placeholder="6, 12, 3301595">
+      </div>
+      <div>
+        <label>이름 (비우면 자동)</label>
+        <input type="text" id="jobName" placeholder="예: 미측정 1차">
+      </div>
+      <div style="align-self:flex-end;display:flex;gap:8px">
+        <button id="preview">대상 세어보기</button>
+        <button id="create" class="primary">작업 시작</button>
+      </div>
+    </div>
+    <div class="note" id="previewOut">대상을 먼저 세어 보면 몇 건짜리 작업인지 알 수 있습니다.</div>
+  </div>
+
+  <div class="split">
+    <!-- 작업 목록 + 진행 -->
+    <div>
+      <div class="card">
+        <h2>작업 <span class="muted" id="cacheInfo" style="font-weight:400;font-size:11.5px"></span></h2>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>이름</th><th>상태</th><th style="width:34%">진행</th></tr></thead>
+            <tbody id="jobs"><tr><td colspan="3" class="muted">불러오는 중…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="detail" style="display:none">
+        <h2 id="jobTitle"></h2>
+        <div class="bar"><i id="bar" style="width:0%"></i></div>
+        <div class="stats" id="stats"></div>
+        <div class="row" style="margin-top:11px">
+          <button id="pause">일시정지</button>
+          <button id="resume">재개</button>
+          <button id="retry">실패만 다시</button>
+          <button id="cancel">취소</button>
+        </div>
+        <div class="tabs" style="margin-top:14px">
+          <button data-f="" class="on">전체</button>
+          <button data-f="SUCCESS">SUCCESS</button>
+          <button data-f="REVIEW">REVIEW</button>
+          <button data-f="NO_SIZE_TABLE">표 없음</button>
+          <button data-f="_error">오류</button>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>상품</th><th>결과</th><th>사유</th><th style="width:64px">초</th></tr></thead>
+            <tbody id="items"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 항목 상세 + 즉석 시험 -->
+    <div>
+      <div class="card">
+        <h2>한 장 즉석 시험</h2>
+        <div class="drop" id="drop">이미지를 끌어다 놓거나 눌러서 고르세요</div>
+        <input type="file" id="file" accept="image/*" style="display:none">
+        <div id="tryOut"></div>
+      </div>
+      <div class="card" id="itemCard" style="display:none">
+        <h2>항목 상세</h2>
+        <div id="itemOut"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const j = async (u, o) => (await fetch(u, o)).json();
+
+let jobId = null, filter = '', timer = null;
+
+// ── 새 작업 ────────────────────────────────────────────────
+$('#src').onchange = () => {
+  const ids = $('#src').value === 'ids';
+  $('#idsBox').style.display = ids ? '' : 'none';
+  $('#limitBox').style.display = ids ? 'none' : '';
+};
+
+$('#preview').onclick = async () => {
+  const src = $('#src').value;
+  if (src === 'ids') { $('#previewOut').textContent = '직접 지정은 세어볼 것이 없습니다.'; return; }
+  $('#previewOut').textContent = '세는 중…';
+  const r = await j(`api/targets?source=${src}&limit=${$('#limit').value || 0}`);
+  if (r.error) { $('#previewOut').textContent = r.error; return; }
+  const hrs = (r.count * 40 / 3600).toFixed(1);   // 실측 평균 40초(1코어·수집과 공유 기준)
+  const hint = src === 'no_sizes'
+    ? '사이즈가 없는 상품은 <b>이미지도 없는</b> 경우가 많습니다 — 읽을 그림이 없으면 대상이 아닙니다.'
+    : '조건에 맞는 상품이 없습니다.';
+  $('#previewOut').innerHTML = r.count
+    ? `대상 <b>${r.count.toLocaleString()}건</b> · 건당 40초 안팎이라 <b>${hrs}시간</b>쯤 걸립니다` +
+      `<br><span class="m muted">앞 10건: ${r.sample.join(', ')}</span>` +
+      `<br><span class="muted">코어가 하나라 수집 파이프라인과 나눠 씁니다. 급하지 않은 작업으로 뒤에서 돌아갑니다.</span>`
+    : `대상 <b>0건</b> — ${hint}`;
+};
+
+$('#create').onclick = async () => {
+  const src = $('#src').value;
+  const body = { source: src, name: $('#jobName').value };
+  if (src === 'ids') body.ids = $('#ids').value; else body.limit = Number($('#limit').value) || 0;
+  $('#create').disabled = true;
+  const r = await j('api/create', {method:'POST', headers:{'Content-Type':'application/json'},
+                                   body: JSON.stringify(body)});
+  $('#create').disabled = false;
+  if (r.error) { $('#previewOut').textContent = r.error; return; }
+  $('#previewOut').innerHTML = `작업 <b>#${r.job_id}</b> 시작 — ${r.total.toLocaleString()}건`;
+  $('#jobName').value = '';
+  await loadJobs(); open_(r.job_id);
+};
+
+// ── 작업 목록 ──────────────────────────────────────────────
+async function loadJobs(){
+  const r = await j('api/jobs');
+  $('#cacheInfo').textContent = r.cache_mb ? `· 이미지 캐시 ${r.cache_mb}MB` : '';
+  const t = $('#jobs');
+  if (!r.jobs.length) { t.innerHTML = '<tr><td colspan="3" class="muted">아직 작업이 없습니다.</td></tr>'; return; }
+  t.innerHTML = r.jobs.map(x => {
+    const pct = x.total ? Math.round(x.processed * 100 / x.total) : 0;
+    return `<tr data-id="${x.id}">
+      <td><b>#${x.id}</b> ${esc(x.name)}<br><span class="muted m">${esc(x.created_at)}</span></td>
+      <td><span class="pill ${x.status === 'running' ? 'running' : 'queued'}">${esc(x.status)}</span></td>
+      <td><div class="bar"><i style="width:${pct}%"></i></div>
+          <span class="muted m">${x.processed.toLocaleString()} / ${x.total.toLocaleString()} (${pct}%)</span></td>
+    </tr>`;
+  }).join('');
+  t.querySelectorAll('tr[data-id]').forEach(tr => tr.onclick = () => open_(Number(tr.dataset.id)));
+}
+
+// 주소에 작업·항목을 남긴다. 「3번 작업 좀 봐 주세요」를 링크로 보낼 수 있고,
+// 새로고침해도 보던 자리로 돌아온다 — 며칠짜리 작업이라 자주 들락거린다.
+function open_(id, push = true){
+  jobId = id; $('#detail').style.display = '';
+  if (push) location.hash = `job=${id}`;
+  tick();
+}
+
+function fromHash(){
+  const m = /job=(\d+)/.exec(location.hash);
+  if (m) open_(Number(m[1]), false);
+  const i = /item=(\d+)/.exec(location.hash);
+  if (i) showItem(Number(i[1]), false);
+}
+window.addEventListener('hashchange', fromHash);
+
+// ── 진행 ───────────────────────────────────────────────────
+async function tick(){
+  if (!jobId) return;
+  const r = await j(`api/job?id=${jobId}`);
+  if (r.error) return;
+  const c = r.counts, done = c.done + c.error, pct = c.total ? Math.round(done * 100 / c.total) : 0;
+  $('#jobTitle').textContent = `#${r.job.id} ${r.job.name}`;
+  $('#bar').style.width = pct + '%';
+  const eta = c.eta_sec == null ? '—'
+    : c.eta_sec > 3600 ? `${(c.eta_sec/3600).toFixed(1)}시간`
+    : `${Math.max(1, Math.round(c.eta_sec/60))}분`;
+  $('#stats').innerHTML = `
+    <span>진행 <b>${done.toLocaleString()} / ${c.total.toLocaleString()}</b> (${pct}%)</span>
+    <span>SUCCESS <b>${c.success.toLocaleString()}</b></span>
+    <span>REVIEW <b>${c.review.toLocaleString()}</b></span>
+    <span>표 없음 <b>${c.no_table.toLocaleString()}</b></span>
+    <span>오류 <b>${c.error.toLocaleString()}</b></span>
+    <span>건당 <b>${c.avg_ms ? (c.avg_ms/1000).toFixed(1) : '—'}</b>초</span>
+    <span>남은 시간 <b>${eta}</b></span>`;
+  const on = r.job.status === 'running';
+  $('#pause').disabled = !on; $('#resume').disabled = on;
+  $('#cancel').disabled = ['done','canceled'].includes(r.job.status);
+  await loadItems();
+  clearTimeout(timer);
+  if (['running','paused'].includes(r.job.status)) timer = setTimeout(tick, 2500);
+}
+
+async function loadItems(){
+  const q = filter === '_error' ? 'state=error' : filter ? `status=${filter}` : '';
+  const r = await j(`api/items?id=${jobId}&limit=80&${q}`);
+  $('#items').innerHTML = r.items.length ? r.items.map(x => {
+    const cls = x.state === 'error' ? 'err' : (x.status || x.state);
+    const lab = x.state === 'error' ? '오류' : (x.status || x.state);
+    return `<tr data-id="${x.id}">
+      <td><b>${x.product_id}</b> ${esc((x.brand||'') + ' ' + (x.product_name||'')).slice(0,42)}</td>
+      <td><span class="pill ${cls}">${esc(lab)}</span></td>
+      <td class="muted">${esc((x.reason || x.error || '').slice(0,60))}</td>
+      <td class="m">${x.elapsed_ms ? (x.elapsed_ms/1000).toFixed(1) : ''}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="4" class="muted">해당하는 항목이 없습니다.</td></tr>';
+  $('#items').querySelectorAll('tr[data-id]').forEach(tr =>
+    tr.onclick = () => showItem(Number(tr.dataset.id)));
+}
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); filter = b.dataset.f; loadItems();
+});
+
+for (const [id, act] of [['pause','pause'],['resume','resume'],['cancel','cancel'],['retry','retry']]) {
+  $('#' + id).onclick = async () => {
+    if (act === 'cancel' && !confirm('이 작업을 취소할까요? 남은 건은 처리되지 않습니다.')) return;
+    await j('api/control', {method:'POST', headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify({id: jobId, action: act})});
+    tick(); loadJobs();
+  };
+}
+
+// ── 항목 상세 ──────────────────────────────────────────────
+function sizeTable(res){
+  if (!res || !res.sizes || !res.sizes.length) return '';
+  const rows = [];
+  for (const s of res.sizes) for (const m of s.measurements)
+    rows.push(`<tr><td>${esc(s.size_label)}</td><td>${esc(m.raw_name)}</td>
+      <td class="m">${m.value ?? esc(m.raw_value)} ${esc(m.unit || '')}</td>
+      <td class="m muted">${esc(m.normalized_field || '—')}</td>
+      <td class="muted">${esc(m.measure_kind)}</td></tr>`);
+  return `<table><thead><tr><th>사이즈</th><th>항목</th><th>값</th><th>컬럼</th><th>방식</th></tr></thead>
+          <tbody>${rows.join('')}</tbody></table>`;
+}
+
+async function showItem(id, push = true){
+  const r = await j(`api/item?id=${id}`);
+  if (r.error) return;
+  if (push) location.hash = jobId ? `job=${jobId}&item=${id}` : `item=${id}`;
+  const it = r.item, res = it.result_json || {};
+  $('#itemCard').style.display = '';
+  const cls = it.state === 'error' ? 'err' : (it.status || it.state);
+  $('#itemOut').innerHTML = `
+    <div class="row" style="justify-content:space-between">
+      <div><b>${it.product_id}</b> ${esc(it.brand || '')} ${esc(it.product_name || '')}</div>
+      <span class="pill ${cls}">${esc(it.state === 'error' ? '오류' : (it.status || it.state))}</span>
+    </div>
+    ${it.reason ? `<p class="muted" style="margin:6px 0 0">${esc(it.reason)}</p>` : ''}
+    ${it.error ? `<p style="margin:6px 0 0;color:var(--bad)">${esc(it.error)}</p>` : ''}
+    ${sizeTable(res)}
+    ${res.source_image_index != null
+      ? `<p class="muted m" style="margin:6px 0 0">읽은 이미지: ${res.source_image_index + 1}번째 · 이미지 ${it.image_count}장 · ${(it.elapsed_ms/1000).toFixed(1)}초</p>` : ''}
+    <div class="thumbs">${(it.images || []).slice(0,8).map(im =>
+      `<img loading="lazy" src="${esc(im.source_url)}" alt="">`).join('')}</div>
+    ${it.product_url ? `<p style="margin:8px 0 0"><a href="${esc(it.product_url)}" target="_blank" rel="noopener">상품 페이지 열기</a></p>` : ''}`;
+  $('#itemCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ── 즉석 시험 ──────────────────────────────────────────────
+const drop = $('#drop');
+drop.onclick = () => $('#file').click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); send(e.dataTransfer.files[0]); };
+$('#file').onchange = e => send(e.target.files[0]);
+
+async function send(f){
+  if (!f) return;
+  $('#tryOut').innerHTML = '<p class="muted">돌리는 중… 글자판이면 몇 초 걸립니다.</p>';
+  const fd = new FormData(); fd.append('image', f);
+  const r = await j('api/try', {method:'POST', body: fd});
+  if (r.error) { $('#tryOut').innerHTML = `<p style="color:var(--bad)">${esc(r.error)}</p>`; return; }
+  const res = r.result;
+  $('#tryOut').innerHTML =
+    `<p style="margin:10px 0 4px"><span class="pill ${res.status}">${res.status}</span>
+       <span class="muted m">${(res._elapsed_ms/1000).toFixed(1)}초</span></p>
+     ${res.reason ? `<p class="muted" style="margin:0 0 6px">${esc(res.reason)}</p>` : ''}
+     ${sizeTable(res)}`;
+}
+
+loadJobs().then(fromHash);
+setInterval(loadJobs, 8000);
+</script>
+</body>
+</html>

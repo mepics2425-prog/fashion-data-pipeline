@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime data
+data/
+logs/
+state/
+queues/
+*.log
+*.jsonl
+
+# Large / generated datasets
+*.csv
+*.xlsx
+*.zip
+
+# OS / editor
+.DS_Store
+.vscode/
